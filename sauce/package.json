@@ -1,0 +1,33 @@
+{
+  "name": "groovy-ui",
+  "version": "1.0.0",
+  "description": "CLI for adding Groovy UI components to your React Native project",
+  "type": "module",
+  "bin": {
+    "groovy-ui": "./bin/groovy-ui.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "inquirer": "^9.2.0",
+    "ora": "^7.0.0",
+    "chalk": "^5.3.0",
+    "execa": "^8.0.0",
+    "fs-extra": "^11.1.0",
+    "node-fetch": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/fs-extra": "^11.0.0",
+    "@types/inquirer": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "declaration": true,  // This generates .d.ts files automatically
+    "declarationMap": true,
+    "outDir": "./dist"
+  }
+}
