@@ -1,9 +1,9 @@
-// Registry types
+// src/registry/index.ts
+
 export interface RegistryFile {
   type: 'registry:ui' | 'registry:example' | 'registry:hook' | 'registry:theme';
   path: string;
   target: string;
-  content?: string;
 }
 
 export interface RegistryComponent {
@@ -15,27 +15,23 @@ export interface RegistryComponent {
   hooks?: string[];
   theme?: string[];
   files: RegistryFile[];
-  preview?: {
-    light: string;
-    dark: string;
-  };
 }
 
 export type Registry = Record<string, RegistryComponent>;
 
-// Base URL for fetching component templates
-const REGISTRY_BASE_URL = 'https://raw.githubusercontent.com/yourusername/groovy-ui/main';
+// ✅ YOUR ACTUAL RAW GITHUB URL
+const REGISTRY_BASE_URL = 'https://raw.githubusercontent.com/Shauray018/groovy-ui/refs/heads/main/groovy-ui-components';
 
-// Import all registry configs
-// import { alertRegistry } from './components/alert.js';
+// Import component registries
 import { buttonRegistry } from './components/button.js';
-// ... import other component registries
+// import { alertRegistry } from './components/alert.js';
+// import { cardRegistry } from './components/card.js';
 
 // Combine all registries
 export const REGISTRY: Registry = {
-//   ...alertRegistry,
   ...buttonRegistry,
-  // ... spread other registries
+  // ...alertRegistry,
+  // ...cardRegistry,
 };
 
 // Helper functions
@@ -74,15 +70,20 @@ export function resolveAllDependencies(componentName: string): string[] {
 export async function fetchComponentTemplate(
   file: RegistryFile
 ): Promise<string> {
+  // Construct the full URL to the raw file
   const url = `${REGISTRY_BASE_URL}/${file.path}`;
+  
+  console.log(`Fetching component from: ${url}`); // For debugging
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
     }
+    
     return await response.text();
   } catch (error) {
-    throw new Error(`Failed to fetch component template: ${error}`);
+    throw new Error(`Failed to fetch component template from ${url}: ${error}`);
   }
 }

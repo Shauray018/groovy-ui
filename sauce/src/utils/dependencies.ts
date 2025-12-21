@@ -1,153 +1,130 @@
 // src/utils/dependencies.ts
-import { execSync } from 'child_process';
-import ora from 'ora';
-import { ComponentDependency } from '../registry/schema/index.js';
-import { PackageManager } from './package-manager.js';
-import { logger } from './logger.js';
-import path from 'path';
+import { execa, execaSync } from 'execa';
 import fs from 'fs-extra';
+import path from 'path';
 
+export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun';
+
+/**
+ * Detects the package manager being used based on lock files
+ */
+export function detectPackageManager(): PackageManager {
+  const cwd = process.cwd();
+
+  // Check lock files in order of preference
+  if (fs.existsSync(path.join(cwd, 'bun.lockb'))) return 'bun';
+  if (fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'))) return 'pnpm';
+  if (fs.existsSync(path.join(cwd, 'yarn.lock'))) return 'yarn';
+  if (fs.existsSync(path.join(cwd, 'package-lock.json'))) return 'npm';
+
+  // Check if any package manager is in PATH
+  try {
+    execaSync('bun', ['--version']);
+    return 'bun';
+  } catch {}
+
+  try {
+    execaSync('pnpm', ['--version']);
+    return 'pnpm';
+  } catch {}
+
+  try {
+    execaSync('yarn', ['--version']);
+    return 'yarn';
+  } catch {}
+
+  // Default to npm (most common)
+  return 'npm';
+}
+
+/**
+ * Installs package dependencies using the specified package manager
+ */
 export async function installPackageDependencies(
   dependencies: string[],
-  targetPath: string,
-  packageManager: PackageManager
+  packageManager: PackageManager,
+  projectPath: string
 ): Promise<void> {
-  if (dependencies.length === 0) return;
+  const commands: Record<PackageManager, string[]> = {
+    npm: ['install', ...dependencies],
+    yarn: ['add', ...dependencies],
+    pnpm: ['add', ...dependencies],
+    bun: ['add', ...dependencies],
+  };
 
-  // Convert string dependencies to ComponentDependency objects
-  const componentDeps = dependencies.map((dep) => {
-    if (dep.includes('@')) {
-      const [name, version] = dep.split('@');
-      return { name, version };
-    }
-    return { name: dep, version: 'latest' };
+  const args = commands[packageManager];
+
+  if (!args) {
+    throw new Error(`Unsupported package manager: ${packageManager}`);
+  }
+
+  await execa(packageManager, args, {
+    cwd: projectPath,
+    stdio: 'inherit',
   });
-
-  if (componentDeps.length > 0) {
-    await installDeps(componentDeps, targetPath, packageManager, false);
-  }
 }
 
-async function installDeps(
-  dependencies: ComponentDependency[],
-  targetPath: string,
-  packageManager: PackageManager,
-  isDev: boolean
-): Promise<void> {
-  const depType = isDev ? 'dev dependencies' : 'dependencies';
-  const spinner = ora(`Installing ${depType}...`).start();
+/**
+ * Checks which dependencies are already installed
+ */
+export async function checkExistingDependencies(
+  dependencies: string[],
+  projectPath: string
+): Promise<{ installed: string[]; missing: string[] }> {
+  const packageJsonPath = path.join(projectPath, 'package.json');
+  const packageJson = await fs.readJson(packageJsonPath);
 
-  try {
-    const packages = dependencies.map((dep) => {
-      return dep.version === 'latest' ? dep.name : `${dep.name}@${dep.version}`;
-    });
+  const allDeps = {
+    ...packageJson.dependencies,
+    ...packageJson.devDependencies,
+  };
 
-    const installCmd = getPackageInstallCommand(
-      packageManager,
-      packages,
-      isDev
-    );
+  const installed: string[] = [];
+  const missing: string[] = [];
 
-    logger.debug(`Running: ${installCmd}`);
+  for (const dep of dependencies) {
+    // Handle scoped packages like @react-navigation/native
+    const depName = dep.includes('@') && dep.startsWith('@') 
+      ? dep.split('@').slice(0, 2).join('@')
+      : dep.split('@')[0];
 
-    execSync(installCmd, {
-      cwd: targetPath,
-      stdio: 'pipe',
-      timeout: 300000,
-    });
-
-    spinner.succeed(`${depType} installed successfully!`);
-  } catch (error) {
-    spinner.fail(`Failed to install ${depType}`);
-    logger.error('Installation error:', error);
-    throw error;
+    if (allDeps[depName]) {
+      installed.push(dep);
+    } else {
+      missing.push(dep);
+    }
   }
+
+  return { installed, missing };
 }
 
-function getPackageInstallCommand(
+/**
+ * Gets the run command for a script based on package manager
+ */
+export function getRunCommand(
   packageManager: PackageManager,
-  packages: string[],
-  isDev: boolean
+  script: string
 ): string {
-  const packagesStr = packages.join(' ');
+  const commands: Record<PackageManager, string> = {
+    npm: `npm run ${script}`,
+    yarn: `yarn ${script}`,
+    pnpm: `pnpm ${script}`,
+    bun: `bun run ${script}`,
+  };
 
-  switch (packageManager) {
-    case 'yarn':
-      return isDev ? `yarn add -D ${packagesStr}` : `yarn add ${packagesStr}`;
-    case 'pnpm':
-      return isDev ? `pnpm add -D ${packagesStr}` : `pnpm add ${packagesStr}`;
-    case 'bun':
-      return isDev ? `bun add -D ${packagesStr}` : `bun add ${packagesStr}`;
-    default:
-      return isDev
-        ? `npm install -D ${packagesStr}`
-        : `npm install ${packagesStr}`;
-  }
+  return commands[packageManager];
 }
 
-export function checkExistingDependencies(
-  dependencies: string[],
-  targetPath: string
-): string[] {
-  try {
-    const packageJsonPath = path.join(targetPath, 'package.json');
-    if (!fs.existsSync(packageJsonPath)) {
-      return dependencies;
-    }
+/**
+ * Gets the install command for the package manager
+ */
+export function getInstallCommand(packageManager: PackageManager): string {
+  const commands: Record<PackageManager, string> = {
+    npm: 'npm install',
+    yarn: 'yarn',
+    pnpm: 'pnpm install',
+    bun: 'bun install',
+  };
 
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-
-    const existing = new Set([
-      ...Object.keys(packageJson.dependencies || {}),
-      ...Object.keys(packageJson.devDependencies || {}),
-    ]);
-
-    return dependencies.filter((dep) => {
-      // Handle dependencies with version specifiers
-      const depName = dep.includes('@') ? dep.split('@')[0] : dep;
-      return !existing.has(depName);
-    });
-  } catch (error) {
-    logger.warn('Failed to check existing dependencies:', error);
-    return dependencies; // If can't read package.json, install all
-  }
-}
-
-export function getDependencyInfo(
-  dependencies: string[],
-  targetPath: string
-): {
-  missing: string[];
-  existing: string[];
-} {
-  try {
-    const packageJsonPath = path.join(targetPath, 'package.json');
-    if (!fs.existsSync(packageJsonPath)) {
-      return { missing: dependencies, existing: [] };
-    }
-
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-
-    const existing = new Set([
-      ...Object.keys(packageJson.dependencies || {}),
-      ...Object.keys(packageJson.devDependencies || {}),
-    ]);
-
-    const missing: string[] = [];
-    const existingDeps: string[] = [];
-
-    dependencies.forEach((dep) => {
-      const depName = dep.includes('@') ? dep.split('@')[0] : dep;
-      if (existing.has(depName)) {
-        existingDeps.push(dep);
-      } else {
-        missing.push(dep);
-      }
-    });
-
-    return { missing, existing: existingDeps };
-  } catch (error) {
-    logger.warn('Failed to get dependency info:', error);
-    return { missing: dependencies, existing: [] };
-  }
+  return commands[packageManager];
 }

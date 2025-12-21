@@ -47,6 +47,10 @@ export const logger = {
     console.log(groovyBanner);
   },
 
+  break: () => {
+    console.log('');
+  },
+
   newline: () => {
     console.log();
   },

@@ -1,24 +1,26 @@
 // src/commands/add.ts
+import path from 'path';
+import inquirer from 'inquirer';
+import ora from 'ora';
 import {
   REGISTRY,
   getComponent,
   resolveAllDependencies,
+  fetchComponentTemplate,
+  getAllComponents,
 } from '../registry/index.js';
 import { logger } from '../utils/logger.js';
-import { validateProjectStructure, 
-    installComponent,
-    checkComponentConflicts, 
-    updateComponentsIndex,
-    getComponentTemplate } from '../utils/registry.ts';
+import {
+  validateProjectStructure,
+  checkComponentConflicts,
+  ensureDirectoryExists,
+  writeComponentFile,
+} from '../utils/filesystem.js';
 import {
   installPackageDependencies,
-  checkExistingDependencies,
-} from '../utils/dependencies.ts';
-import { detectPackageManagerFromInvocation } from '../utils/package-manager.ts';
-import { writeFile, fileExists, createDirectory } from '../utils/filesystem.ts';
-import path from 'path';
-import inquirer from 'inquirer';
-import ora from 'ora';
+  detectPackageManager,
+  type PackageManager,
+} from '../utils/dependencies.js';
 
 interface AddCommandOptions {
   overwrite?: boolean;
@@ -30,441 +32,291 @@ interface AddCommandOptions {
   bun?: boolean;
 }
 
-export async function addCommand(
-  components: string[],
-  options: AddCommandOptions
-): Promise<void> {
-  try {
-    const projectPath = process.cwd();
-
-    // Validate project structure
-    const isValidProject = await validateProjectStructure(projectPath);
-    if (!isValidProject) {
-      logger.error(
-        'This command must be run in a valid React Native/Expo project'
-      );
-      process.exit(1);
-    }
-
-    // If no components specified, show interactive selection
-    if (components.length === 0) {
-      components = await selectComponentsInteractively();
-    }
-
-    // Validate components exist in registry
-    const invalidComponents = components.filter((name) => !getComponent(name));
-    if (invalidComponents.length > 0) {
-      logger.error(`Unknown components: ${invalidComponents.join(', ')}`);
-      logger.info('Available components:');
-      Object.values(REGISTRY)
-        .filter((comp) => comp.type === 'registry:ui')
-        .forEach((comp) => logger.plain(`  ${comp.name}`));
-      process.exit(1);
-    }
-
-    // Determine package manager
-    const packageManager = getPackageManager(options);
-
-    // Resolve all dependencies for requested components
-    const allComponentsToInstall = new Set<string>();
-    const allPackageDependencies = new Set<string>();
-    const allHookDependencies = new Set<string>();
-    const allThemeDependencies = new Set<string>();
-
-    for (const componentName of components) {
-      const dependencies = resolveAllDependencies(componentName);
-      dependencies.forEach((dep) => allComponentsToInstall.add(dep));
-
-      // Collect all package dependencies
-      dependencies.forEach((dep) => {
-        const component = getComponent(dep);
-        if (component) {
-          (component.dependencies || []).forEach((pkgDep) =>
-            allPackageDependencies.add(pkgDep)
-          );
-          (component.hooks || []).forEach((hook) =>
-            allHookDependencies.add(hook)
-          );
-          (component.theme || []).forEach((theme) =>
-            allThemeDependencies.add(theme)
-          );
-        }
-      });
-    }
-
-    // Check for conflicts
-    const { conflicts } = await checkComponentConflicts(
-      Array.from(allComponentsToInstall),
-      projectPath,
-      REGISTRY
-    );
-
-    // Handle conflicts more granularly
-    let componentsToSkip = new Set<string>();
-    let shouldOverwriteAll = options.overwrite || false;
-
-    if (conflicts.length > 0 && !shouldOverwriteAll) {
-      logger.warn('The following files already exist:');
-      conflicts.forEach(({ component, files }) => {
-        logger.plain(`  ${component}:`);
-        files.forEach((file) => logger.plain(`    ${file}`));
-      });
-
-      if (!options.yes) {
-        const { overwriteChoice } = await inquirer.prompt([
-          {
-            type: 'list',
-            name: 'overwriteChoice',
-            message: 'How would you like to handle existing files?',
-            choices: [
-              { name: 'Overwrite all existing files', value: 'overwrite-all' },
-              {
-                name: 'Skip components with existing files',
-                value: 'skip-conflicts',
-              },
-              {
-                name: 'Choose for each component individually',
-                value: 'individual',
-              },
-              { name: 'Cancel operation', value: 'cancel' },
-            ],
-            default: 'skip-conflicts',
-          },
-        ]);
-
-        if (overwriteChoice === 'cancel') {
-          logger.info('Operation cancelled');
-          process.exit(0);
-        } else if (overwriteChoice === 'overwrite-all') {
-          shouldOverwriteAll = true;
-        } else if (overwriteChoice === 'individual') {
-          // Ask for each conflicting component individually
-          for (const conflict of conflicts) {
-            const { shouldOverwrite } = await inquirer.prompt([
-              {
-                type: 'confirm',
-                name: 'shouldOverwrite',
-                message: `Overwrite files for component "${conflict.component}"?`,
-                default: false,
-              },
-            ]);
-
-            if (!shouldOverwrite) {
-              componentsToSkip.add(conflict.component);
-            }
-          }
-        } else if (overwriteChoice === 'skip-conflicts') {
-          // Skip all conflicting components
-          conflicts.forEach(({ component }) => {
-            componentsToSkip.add(component);
-          });
-        }
-      } else {
-        // If --yes flag is used, skip conflicting components by default
-        conflicts.forEach(({ component }) => {
-          componentsToSkip.add(component);
-        });
-      }
-    }
-
-    // Filter out components to skip
-    const finalComponentsToInstall = Array.from(allComponentsToInstall).filter(
-      (comp) => !componentsToSkip.has(comp)
-    );
-
-    // Also filter out dependencies of skipped components
-    const finalHookDependencies = Array.from(allHookDependencies).filter(
-      (hook) => {
-        // Check if this hook is only needed by skipped components
-        const needingComponents = Array.from(allComponentsToInstall).filter(
-          (comp) => {
-            const component = getComponent(comp);
-            return component && (component.hooks || []).includes(hook);
-          }
-        );
-        return needingComponents.some((comp) => !componentsToSkip.has(comp));
-      }
-    );
-
-    const finalThemeDependencies = Array.from(allThemeDependencies).filter(
-      (theme) => {
-        // Check if this theme is only needed by skipped components
-        const needingComponents = Array.from(allComponentsToInstall).filter(
-          (comp) => {
-            const component = getComponent(comp);
-            return component && (component.theme || []).includes(theme);
-          }
-        );
-        return needingComponents.some((comp) => !componentsToSkip.has(comp));
-      }
-    );
-
-    // Show what will be installed vs skipped
-    if (componentsToSkip.size > 0) {
-      logger.info(
-        `Skipping components: ${Array.from(componentsToSkip).join(', ')}`
-      );
-    }
-
-    if (finalComponentsToInstall.length === 0) {
-      logger.warn('No components to install after handling conflicts');
-      process.exit(0);
-    }
-
-    // Show dry run information
-    if (options.dryRun) {
-      logger.info('Dry run - would install the following:');
-      logger.plain(`Components: ${finalComponentsToInstall.join(', ')}`);
-
-      if (allPackageDependencies.size > 0) {
-        logger.plain(
-          `Package dependencies: ${Array.from(allPackageDependencies).join(
-            ', '
-          )}`
-        );
-      }
-
-      if (finalHookDependencies.length > 0) {
-        logger.plain(`Hook dependencies: ${finalHookDependencies.join(', ')}`);
-      }
-
-      if (finalThemeDependencies.length > 0) {
-        logger.plain(
-          `Theme dependencies: ${finalThemeDependencies.join(', ')}`
-        );
-      }
-
-      if (componentsToSkip.size > 0) {
-        logger.plain(
-          `Skipped components: ${Array.from(componentsToSkip).join(', ')}`
-        );
-      }
-
-      return;
-    }
-
-    // Install package dependencies (these are still needed for non-skipped components)
-    const packageDepsArray = Array.from(allPackageDependencies);
-    const missingPackageDeps = checkExistingDependencies(
-      packageDepsArray,
-      projectPath
-    );
-
-    if (missingPackageDeps.length > 0) {
-      logger.info(
-        `Installing package dependencies: ${missingPackageDeps.join(', ')}`
-      );
-      await installPackageDependencies(
-        missingPackageDeps,
-        projectPath,
-        packageManager
-      );
-    }
-
-    // Install hook dependencies
-    await installHookDependencies(finalHookDependencies, projectPath, {
-      ...options,
-      overwrite: shouldOverwriteAll,
-    });
-
-    // Install theme dependencies
-    await installThemeDependencies(finalThemeDependencies, projectPath, {
-      ...options,
-      overwrite: shouldOverwriteAll,
-    });
-
-    // Install components
-    const spinner = ora('Installing components...').start();
-    const installedComponents: string[] = [];
-
-    try {
-      for (const componentName of finalComponentsToInstall) {
-        const component = getComponent(componentName);
-        if (!component) continue;
-
-        await installComponent(component, projectPath, {
-          overwrite: shouldOverwriteAll,
-          dryRun: false,
-        });
-
-        installedComponents.push(componentName);
-      }
-
-      spinner.succeed('Components installed successfully!');
-    } catch (error) {
-      spinner.fail('Failed to install components');
-      throw error;
-    }
-
-    // Update components index
-    // await updateComponentsIndex(projectPath, installedComponents);
-
-    // Show success message
-    const successfullyRequestedComponents = components.filter(
-      (comp) => !componentsToSkip.has(comp)
-    );
-
-    if (successfullyRequestedComponents.length > 0) {
-      logger.success(
-        `Successfully added ${successfullyRequestedComponents.length} component(s):`
-      );
-      successfullyRequestedComponents.forEach((name) =>
-        logger.plain(`  ✓ ${name}`)
-      );
-    }
-
-    if (installedComponents.length > successfullyRequestedComponents.length) {
-      const additionalComponents = installedComponents.filter(
-        (name) => !successfullyRequestedComponents.includes(name)
-      );
-      logger.info(
-        `Also installed dependencies: ${additionalComponents.join(', ')}`
-      );
-    }
-
-    if (componentsToSkip.size > 0) {
-      logger.warn(
-        `Skipped ${
-          componentsToSkip.size
-        } component(s) due to existing files: ${Array.from(
-          componentsToSkip
-        ).join(', ')}`
-      );
-    }
-
-    logger.newline();
-    logger.info('Next steps:');
-    logger.plain('  Import components from @/components/ui');
-    logger.plain('  Check the documentation for usage examples');
-  } catch (error) {
-    logger.error('Failed to add components:', error);
+async function selectComponentsInteractively(): Promise<string[]> {
+  const components = getAllComponents();
+  
+  if (components.length === 0) {
+    logger.error('No components available in registry');
     process.exit(1);
   }
-}
-
-async function selectComponentsInteractively(): Promise<string[]> {
-  const availableComponents = Object.values(REGISTRY)
-    .filter((comp) => comp.type === 'registry:ui')
-    .map((comp) => ({
-      name: `${comp.name} - ${comp.description}`,
-      value: comp.name,
-    }));
-
-  const { selectedComponents } = await inquirer.prompt([
+  
+  const { selected } = await inquirer.prompt([
     {
       type: 'checkbox',
-      name: 'selectedComponents',
-      message: 'Select components to add:',
-      choices: availableComponents,
-      pageSize: 15,
+      name: 'selected',
+      message: 'Select components to install:',
+      choices: components.map(comp => ({
+        name: `${comp.name.padEnd(15)} - ${comp.description}`,
+        value: comp.name,
+      })),
+      validate: (input) => {
+        if (input.length === 0) {
+          return 'Please select at least one component';
+        }
+        return true;
+      },
     },
   ]);
 
-  if (selectedComponents.length === 0) {
-    logger.error('No components selected');
-    process.exit(1);
-  }
-
-  return selectedComponents;
+  return selected;
 }
 
-function getPackageManager(options: AddCommandOptions) {
+function getPackageManager(options: AddCommandOptions): PackageManager {
   if (options.npm) return 'npm';
   if (options.yarn) return 'yarn';
   if (options.pnpm) return 'pnpm';
   if (options.bun) return 'bun';
-
-  return detectPackageManagerFromInvocation();
+  
+  return detectPackageManager();
 }
 
-async function installHookDependencies(
-  hooks: string[],
-  projectPath: string,
-  options: AddCommandOptions
+export async function addCommand(
+  components: string[],
+  options: AddCommandOptions = {}
 ): Promise<void> {
-  if (hooks.length === 0) return;
+  const projectPath = process.cwd();
 
-  const hooksDir = path.join(projectPath, 'hooks');
-  await createDirectory(hooksDir);
+  logger.info('🎨 Adding Groovy UI components to your project...');
+  logger.break();
 
-  for (const hookName of hooks) {
-    const hookPath = path.join(hooksDir, `${hookName}.ts`);
+  // Step 1: Validate project structure
+  const spinner = ora('Validating project structure...').start();
+  const isValidProject = await validateProjectStructure(projectPath);
 
-    if ((await fileExists(hookPath)) && !options.overwrite) {
-      if (!options.yes) {
-        const { shouldOverwrite } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'shouldOverwrite',
-            message: `Hook ${hookName} already exists. Overwrite?`,
-            default: false,
-          },
-        ]);
+  if (!isValidProject) {
+    spinner.fail('Invalid project structure');
+    logger.error('This command must be run in a React Native/Expo project');
+    logger.info('Make sure you have a package.json with react-native or expo');
+    logger.break();
+    logger.info('Did you forget to run "groovy-ui init" first?');
+    process.exit(1);
+  }
+  spinner.succeed('Project structure validated');
 
-        if (!shouldOverwrite) {
-          logger.info(`Skipping hook: ${hookName}`);
-          continue;
-        }
-      } else {
-        logger.info(`Skipping existing hook: ${hookName}`);
-        continue;
+  // Step 2: Interactive component selection if none provided
+  if (components.length === 0) {
+    logger.break();
+    components = await selectComponentsInteractively();
+  }
+
+  // Step 3: Validate components exist
+  const invalidComponents = components.filter((name) => !getComponent(name));
+  if (invalidComponents.length > 0) {
+    logger.error(`Unknown components: ${invalidComponents.join(', ')}`);
+    logger.break();
+    logger.info('Available components:');
+    getAllComponents().forEach((comp) =>
+      logger.plain(`  • ${comp.name.padEnd(20)} ${comp.description}`)
+    );
+    process.exit(1);
+  }
+
+  // Step 4: Resolve all dependencies
+  spinner.start('Resolving dependencies...');
+  const allComponentsToInstall = new Set<string>();
+  const allPackageDependencies = new Set<string>();
+  const allHooks = new Set<string>();
+  const allThemes = new Set<string>();
+
+  for (const componentName of components) {
+    const dependencies = resolveAllDependencies(componentName);
+    dependencies.forEach((dep) => {
+      allComponentsToInstall.add(dep);
+
+      const component = getComponent(dep);
+      if (component) {
+        (component.dependencies || []).forEach((pkg) =>
+          allPackageDependencies.add(pkg)
+        );
+        (component.hooks || []).forEach((hook) => allHooks.add(hook));
+        (component.theme || []).forEach((theme) => allThemes.add(theme));
       }
-    }
+    });
+  }
+  spinner.succeed('Dependencies resolved');
 
-    try {
-      const hookTemplate = await getComponentTemplate(
-        `templates/hooks/${hookName}.ts`
-      );
-      await writeFile(hookPath, hookTemplate);
-      logger.success(`Added hook: ${hookName}`);
-    } catch (error) {
-      logger.warn(`Failed to install hook ${hookName}:`, error);
+  // Step 5: Show what will be installed
+  logger.break();
+  logger.info('Components to install:');
+  Array.from(allComponentsToInstall).forEach((comp) => {
+    const component = getComponent(comp);
+    const type =
+      component?.type !== 'registry:ui'
+        ? ` (${component?.type.replace('registry:', '')})`
+        : '';
+    logger.plain(`  • ${comp}${type}`);
+  });
+
+  if (allPackageDependencies.size > 0) {
+    logger.break();
+    logger.info('Package dependencies:');
+    Array.from(allPackageDependencies).forEach((dep) =>
+      logger.plain(`  • ${dep}`)
+    );
+  }
+
+  // Step 6: Check for conflicts
+  const conflicts = await checkComponentConflicts(
+    Array.from(allComponentsToInstall),
+    projectPath
+  );
+
+  if (conflicts.length > 0 && !options.overwrite) {
+    logger.break();
+    logger.warn('The following files already exist:');
+    conflicts.forEach((file) => logger.plain(`  • ${file}`));
+
+    if (!options.yes) {
+      const { proceed } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'proceed',
+          message: 'Do you want to overwrite these files?',
+          default: false,
+        },
+      ]);
+
+      if (!proceed) {
+        logger.info('Installation cancelled');
+        return;
+      }
     }
   }
-}
 
-async function installThemeDependencies(
-  themes: string[],
-  projectPath: string,
-  options: AddCommandOptions
-): Promise<void> {
-  if (themes.length === 0) return;
+  // Step 7: Dry run
+  if (options.dryRun) {
+    logger.break();
+    logger.info('[DRY RUN] Would install the above components');
+    return;
+  }
 
-  const themeDir = path.join(projectPath, 'theme');
-  await createDirectory(themeDir);
+  // Step 8: Install package dependencies first
+  if (allPackageDependencies.size > 0) {
+    const packageManager = getPackageManager(options);
+    logger.break();
+    spinner.start('Installing package dependencies...');
 
-  for (const themeName of themes) {
-    const themePath = path.join(themeDir, `${themeName}.ts`);
+    try {
+      await installPackageDependencies(
+        Array.from(allPackageDependencies),
+        packageManager,
+        projectPath
+      );
+      spinner.succeed('Package dependencies installed');
+    } catch (error) {
+      spinner.fail('Failed to install package dependencies');
+      logger.error(String(error));
+      logger.warn('You may need to install dependencies manually');
+    }
+  }
 
-    if ((await fileExists(themePath)) && !options.overwrite) {
-      if (!options.yes) {
-        const { shouldOverwrite } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'shouldOverwrite',
-            message: `Theme ${themeName} already exists. Overwrite?`,
-            default: false,
-          },
-        ]);
+  // Step 9: Install components
+  logger.break();
+  spinner.start('Installing components...');
 
-        if (!shouldOverwrite) {
-          logger.info(`Skipping theme: ${themeName}`);
-          continue;
+  try {
+    let filesInstalled = 0;
+
+    for (const componentName of allComponentsToInstall) {
+      const component = getComponent(componentName);
+      if (!component) continue;
+
+      for (const file of component.files) {
+        const targetPath = path.join(projectPath, file.target);
+
+        // Ensure directory exists
+        await ensureDirectoryExists(path.dirname(targetPath));
+
+        // Fetch and write component file
+        try {
+          const content = await fetchComponentTemplate(file);
+          await writeComponentFile(targetPath, content);
+          filesInstalled++;
+        } catch (error) {
+          spinner.fail(`Failed to fetch ${file.path}`);
+          logger.error(String(error));
+          throw error;
         }
-      } else {
-        logger.info(`Skipping existing theme: ${themeName}`);
-        continue;
       }
     }
 
-    try {
-      const themeTemplate = await getComponentTemplate(
-        `templates/theme/${themeName}.ts`
-      );
-      await writeFile(themePath, themeTemplate);
-      logger.success(`Added theme: ${themeName}`);
-    } catch (error) {
-      logger.warn(`Failed to install theme ${themeName}:`, error);
+    spinner.succeed(`Components installed (${filesInstalled} files)`);
+  } catch (error) {
+    spinner.fail('Failed to install components');
+    logger.error(String(error));
+    process.exit(1);
+  }
+
+  // Step 10: Update component index
+  await updateComponentIndex(projectPath, Array.from(allComponentsToInstall));
+
+  // Step 11: Success message
+  logger.break();
+  logger.success('✨ All done! Components have been added to your project.');
+  logger.break();
+
+  logger.info('Installed components:');
+  Array.from(allComponentsToInstall).forEach((comp) => {
+    logger.plain(`  • ${comp}`);
+  });
+
+  logger.break();
+  logger.info('Next steps:');
+  logger.plain('  1. Import the components in your app:');
+  logger.plain(`     import { Button } from '@/components/ui/button';`);
+  logger.break();
+  logger.plain('  2. Use them:');
+  logger.plain(`     <Button title="Hello" onPress={() => {}} />`);
+  logger.break();
+
+  logger.info('Happy coding! 🚀');
+}
+
+async function updateComponentIndex(
+  projectPath: string,
+  components: string[]
+): Promise<void> {
+  const indexPath = path.join(projectPath, 'components', 'ui', 'index.ts');
+
+  try {
+    // Read existing index
+    const fs = await import('fs-extra');
+    let content = '';
+
+    if (await fs.pathExists(indexPath)) {
+      content = await fs.readFile(indexPath, 'utf-8');
     }
+
+    // Add exports for new components
+    const newExports: string[] = [];
+
+    for (const componentName of components) {
+      const component = getComponent(componentName);
+      if (!component || component.type !== 'registry:ui') continue;
+
+      // Convert component name to PascalCase for export
+      const pascalName = componentName
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join('');
+
+      const exportLine = `export { ${pascalName} } from './${componentName}';`;
+      const typeExportLine = `export type { ${pascalName}Props } from './${componentName}';`;
+
+      // Check if already exported
+      if (!content.includes(exportLine)) {
+        newExports.push(exportLine);
+        newExports.push(typeExportLine);
+      }
+    }
+
+    if (newExports.length > 0) {
+      // Append new exports
+      const updatedContent = content + '\n' + newExports.join('\n') + '\n';
+      await fs.writeFile(indexPath, updatedContent, 'utf-8');
+    }
+  } catch (error) {
+    // Non-critical error, just log it
+    logger.warn('Could not update component index automatically');
   }
 }

@@ -4,10 +4,10 @@ import ora from 'ora';
 import path from 'path';
 import fs from 'fs-extra';
 import { logger } from '../utils/logger.js';
-import { 
-  validateProjectStructure, 
+import {
+  validateProjectStructure,
   ensureDirectoryExists,
-  writeComponentFile 
+  writeComponentFile,
 } from '../utils/filesystem.js';
 
 interface InitCommandOptions {
@@ -15,17 +15,13 @@ interface InitCommandOptions {
   components?: boolean;
 }
 
-/**
- * Initialize groovy-ui in the current project
- * This creates the necessary folder structure and config files
- */
 export async function initCommand(
   options: InitCommandOptions = {}
 ): Promise<void> {
   const projectPath = process.cwd();
 
   logger.info('🎨 Initializing Groovy UI in your project...');
-  logger.newline();
+  logger.break();
 
   // Step 1: Validate this is a React Native/Expo project
   const spinner = ora('Checking project structure...').start();
@@ -35,6 +31,9 @@ export async function initCommand(
     spinner.fail('Not a valid React Native or Expo project');
     logger.error('This command must be run in a React Native or Expo project');
     logger.info('Make sure you have a package.json with react-native or expo');
+    logger.break();
+    logger.info('To create a new Expo project:');
+    logger.plain('  npx create-expo-app my-app');
     process.exit(1);
   }
   spinner.succeed('Valid React Native/Expo project detected');
@@ -46,6 +45,7 @@ export async function initCommand(
   if (alreadyInitialized && !options.yes) {
     logger.warn('Groovy UI appears to be already initialized');
     logger.plain(`Found existing directory: ${componentsDir}`);
+    logger.break();
 
     const { proceed } = await inquirer.prompt([
       {
@@ -63,16 +63,17 @@ export async function initCommand(
   }
 
   // Step 3: Create folder structure
+  logger.break();
   spinner.start('Creating folder structure...');
-  
+
   try {
     // Create components/ui directory
     await ensureDirectoryExists(path.join(projectPath, 'components', 'ui'));
-    
+
     // Create lib/utils directory (for utility functions)
     await ensureDirectoryExists(path.join(projectPath, 'lib', 'utils'));
-    
-    // Optional: Create hooks directory
+
+    // Create hooks directory
     await ensureDirectoryExists(path.join(projectPath, 'hooks'));
 
     spinner.succeed('Folder structure created');
@@ -85,9 +86,11 @@ export async function initCommand(
   spinner.start('Setting up utilities...');
 
   try {
-    // Create cn utility (for conditional classNames - useful for styling)
+    // Create cn utility (for conditional classNames)
     const cnUtilPath = path.join(projectPath, 'lib', 'utils', 'cn.ts');
-    const cnUtilContent = `// Utility for merging class names
+    const cnUtilContent = `/**
+ * Utility for merging class names
+ */
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
@@ -96,7 +99,9 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
 
     // Create colors utility (for theme colors)
     const colorsUtilPath = path.join(projectPath, 'lib', 'utils', 'colors.ts');
-    const colorsUtilContent = `// Color utilities for your components
+    const colorsUtilContent = `/**
+ * Color utilities for your components
+ */
 export const colors = {
   primary: '#007AFF',
   secondary: '#8E8E93',
@@ -106,9 +111,12 @@ export const colors = {
   background: '#FFFFFF',
   text: '#000000',
   border: '#E5E5EA',
+  muted: '#F2F2F7',
 };
 
-export function getColor(name: keyof typeof colors): string {
+export type ColorName = keyof typeof colors;
+
+export function getColor(name: ColorName): string {
   return colors[name];
 }
 `;
@@ -125,13 +133,20 @@ export function getColor(name: keyof typeof colors): string {
 
   try {
     const indexPath = path.join(projectPath, 'components', 'ui', 'index.ts');
-    const indexContent = `// Export all your UI components from here
+    const indexContent = `/**
+ * Groovy UI Components
+ * 
+ * Export all your UI components from here
+ * Components will be automatically added when you run: groovy-ui add <component>
+ * 
+ * Example usage:
+ * import { Button, Alert, Card } from '@/components/ui';
+ */
+
+// Components will be exported here automatically
 // Example:
 // export { Button } from './button';
-// export { Alert } from './alert';
-// export { Card } from './card';
-
-// Components will be added here when you run: groovy-ui add <component>
+// export type { ButtonProps } from './button';
 `;
     await writeComponentFile(indexPath, indexContent);
 
@@ -157,7 +172,8 @@ components/
 ├── ui/           # Core UI components
 │   ├── button.tsx
 │   ├── alert.tsx
-│   └── index.ts
+│   ├── card.tsx
+│   └── index.ts  # Export all components
 └── README.md     # This file
 \`\`\`
 
@@ -166,8 +182,14 @@ components/
 Add new components using the Groovy UI CLI:
 
 \`\`\`bash
+# Add a single component
 npx groovy-ui add button
-npx groovy-ui add alert card
+
+# Add multiple components
+npx groovy-ui add alert card modal
+
+# Interactive selection
+npx groovy-ui add
 \`\`\`
 
 ## Usage
@@ -175,12 +197,15 @@ npx groovy-ui add alert card
 Import components from the ui directory:
 
 \`\`\`tsx
-import { Button } from '@/components/ui/button';
-import { Alert } from '@/components/ui/alert';
+import { Button, Alert } from '@/components/ui';
 
 export default function App() {
   return (
-    <Button title="Click me" onPress={() => alert('Hello!')} />
+    <Button 
+      title="Click me" 
+      onPress={() => alert('Hello!')} 
+      variant="primary"
+    />
   );
 }
 \`\`\`
@@ -188,23 +213,46 @@ export default function App() {
 ## Customization
 
 All components are copied to your project as source code, so you can:
-- Modify styles to match your design
-- Add or remove features
-- Extend functionality
-- Change behavior
 
-The components are yours to customize!
+- ✏️ Modify styles to match your design system
+- ➕ Add or remove features as needed
+- 🔧 Extend functionality
+- 🎨 Change behavior and appearance
+
+**The components are yours to customize!**
+
+## Available Components
+
+- **Button**: Customizable button with variants and sizes
+- **Alert**: Display important messages with different severity levels
+- **Card**: Container component with header and footer
+- **Modal**: Full-screen or centered modal dialogs
+- **Input**: Text input with labels and validation
+- And more...
+
+## TypeScript Support
+
+All components are written in TypeScript with full type safety:
+
+\`\`\`tsx
+import { ButtonProps } from '@/components/ui';
+
+const MyButton: React.FC<ButtonProps> = (props) => {
+  return <Button {...props} />;
+};
+\`\`\`
 
 ## Learn More
 
-Visit [groovy-ui.dev](https://groovy-ui.dev) for documentation and examples.
+- Documentation: [groovy-ui.dev](https://groovy-ui.dev)
+- Examples: [github.com/groovy-ui/examples](https://github.com/groovy-ui/examples)
+- Issues: [github.com/groovy-ui/issues](https://github.com/groovy-ui/issues)
 `;
     await writeComponentFile(readmePath, readmeContent);
 
     spinner.succeed('Documentation created');
   } catch (error) {
     spinner.fail('Failed to create documentation');
-    logger.debug(error as string);
     // Don't throw - README is optional
   }
 
@@ -212,17 +260,19 @@ Visit [groovy-ui.dev](https://groovy-ui.dev) for documentation and examples.
   const tsconfigPath = path.join(projectPath, 'tsconfig.json');
   if (await fs.pathExists(tsconfigPath)) {
     spinner.start('Checking TypeScript configuration...');
-    
+
     try {
       const tsconfig = await fs.readJson(tsconfigPath);
       const hasPathAlias = tsconfig?.compilerOptions?.paths?.['@/*'];
 
       if (!hasPathAlias) {
-        logger.warn('Path alias @/* not found in tsconfig.json');
-        logger.info('Consider adding this to your tsconfig.json:');
+        spinner.warn('Path alias @/* not found in tsconfig.json');
+        logger.break();
+        logger.info('📝 Add this to your tsconfig.json for better imports:');
         logger.plain(`
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
@@ -237,22 +287,57 @@ Visit [groovy-ui.dev](https://groovy-ui.dev) for documentation and examples.
     }
   }
 
+  // Step 8: Create .gitignore entry (optional)
+  try {
+    const gitignorePath = path.join(projectPath, '.gitignore');
+    if (await fs.pathExists(gitignorePath)) {
+      let gitignoreContent = await fs.readFile(gitignorePath, 'utf-8');
+
+      // Check if groovy-ui section exists
+      if (!gitignoreContent.includes('# groovy-ui')) {
+        // Add groovy-ui section
+        const groovyIgnore = `
+
+# groovy-ui
+# Uncomment if you don't want to track component customizations
+# components/ui/
+`;
+        gitignoreContent += groovyIgnore;
+        await fs.writeFile(gitignorePath, gitignoreContent, 'utf-8');
+      }
+    }
+  } catch (error) {
+    // Non-critical, ignore
+  }
+
   // Success!
-  logger.newline();
+  logger.break();
   logger.success('✨ Groovy UI initialized successfully!');
-  logger.newline();
+  logger.break();
+
+  // Show folder structure
+  logger.info('Created folder structure:');
+  logger.plain('  components/');
+  logger.plain('  ├── ui/          # Your UI components');
+  logger.plain('  └── README.md    # Documentation');
+  logger.plain('  lib/');
+  logger.plain('  └── utils/       # Utility functions');
+  logger.plain('  hooks/           # Custom React hooks');
+  logger.break();
 
   logger.info('Next steps:');
   logger.plain('  1. Add components:');
   logger.plain('     npx groovy-ui add button');
   logger.plain('     npx groovy-ui add alert card modal');
-  logger.newline();
+  logger.break();
+
   logger.plain('  2. Import in your app:');
   logger.plain("     import { Button } from '@/components/ui/button';");
-  logger.newline();
+  logger.break();
+
   logger.plain('  3. Use the components:');
   logger.plain('     <Button title="Hello" onPress={() => {}} />');
-  logger.newline();
+  logger.break();
 
   logger.info('Happy coding! 🚀');
 }
