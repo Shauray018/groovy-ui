@@ -2,7 +2,7 @@
   "name": "groovy-ui-components",
   "version": "1.0.0",
   "main": "src/components/ui/index.ts",
-  "types": "src/components/ui/index.d.ts",
+  "types": "src/components/ui/index.ts",
   "files": [
     "src/components"
   ],

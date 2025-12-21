@@ -1,11 +1,27 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+// import { Button } from '../src/components/ui/Button';
+import { Button } from './src/components/ui';
 
-export default function App() {
+export default function Index() {
   return (
     <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <Button 
+        title="Primary Button" 
+        onPress={() => alert('Clicked!')}
+        variant="primary"
+      />
+      
+      <Button 
+        title="Secondary Button" 
+        onPress={() => alert('Clicked!')}
+        variant="secondary"
+      />
+      
+      <Button 
+        title="Outline Button" 
+        onPress={() => alert('Clicked!')}
+        variant="outline"
+      />
     </View>
   );
 }
@@ -13,8 +29,9 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
   },
 });
