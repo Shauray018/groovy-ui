@@ -1,27 +1,17 @@
 import { View, StyleSheet } from 'react-native';
-// import { Button } from '../src/components/ui/Button';
-import { Button } from './src/components/ui';
+import { StatefulButton } from './src/components/ui/StatefulButton';
 
 export default function Index() {
   return (
     <View style={styles.container}>
-      <Button 
-        title="Primary Button" 
-        onPress={() => alert('Clicked!')}
-        variant="primary"
-      />
-      
-      <Button 
-        title="Secondary Button" 
-        onPress={() => alert('Clicked!')}
-        variant="secondary"
-      />
-      
-      <Button 
-        title="Outline Button" 
-        onPress={() => alert('Clicked!')}
-        variant="outline"
-      />
+      <StatefulButton
+        onPress={() =>
+          new Promise((resolve) => setTimeout(resolve, 4000))
+        }
+      >
+        Send message
+      </StatefulButton>
+      hello
     </View>
   );
 }
@@ -33,5 +23,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     gap: 16,
+    backgroundColor:"#000000"
   },
 });

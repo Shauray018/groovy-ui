@@ -8,12 +8,12 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
-export interface ButtonProps {
+interface StatefulButtonProps {
   onPress: () => Promise<any>;
   children: React.ReactNode;
 }
 
-export const Button = ({ onPress, children }: ButtonProps) => {
+export const StatefulButton = ({ onPress, children }: StatefulButtonProps) => {
   const loaderScale = useSharedValue(0);
   const loaderRotate = useSharedValue(0);
   const checkScale = useSharedValue(0);
