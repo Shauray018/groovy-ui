@@ -4,7 +4,7 @@ import {
   getAllComponents,
   getComponent,
   resolveAllDependencies
-} from "./chunk-3BUGHI3R.js";
+} from "./chunk-4OHUC5LR.js";
 export {
   REGISTRY,
   fetchComponentTemplate,
@@ -12,4 +12,4 @@ export {
   getComponent,
   resolveAllDependencies
 };
-//# sourceMappingURL=registry-ZMFJ6C6R.js.map
+//# sourceMappingURL=registry-V5YPM6G3.js.map

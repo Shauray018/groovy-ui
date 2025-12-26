@@ -1,6 +1,6 @@
 import { Registry } from '../index.js';
 
-export const buttonRegistry: Registry = {
+export const lightningRegistry: Registry = {
   button: {
     name: 'lightning background',
     description: 'crazyyyyy background',

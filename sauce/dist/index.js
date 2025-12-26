@@ -3,7 +3,7 @@ import {
   getAllComponents,
   getComponent,
   resolveAllDependencies
-} from "./chunk-3BUGHI3R.js";
+} from "./chunk-4OHUC5LR.js";
 
 // src/index.ts
 import { Command } from "commander";
@@ -88,7 +88,7 @@ async function fileExists(filePath) {
 }
 async function checkComponentConflicts(components, projectPath) {
   const conflicts = [];
-  const { getComponent: getComponent2 } = await import("./registry-ZMFJ6C6R.js");
+  const { getComponent: getComponent2 } = await import("./registry-V5YPM6G3.js");
   for (const componentName of components) {
     const component = getComponent2(componentName);
     if (!component) continue;

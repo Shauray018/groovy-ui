@@ -19,12 +19,54 @@ var buttonRegistry = {
   }
 };
 
+// src/registry/components/silk.ts
+var silkRegistry = {
+  button: {
+    name: "silk background",
+    description: "crazyyyyy background",
+    type: "registry:ui",
+    registryDependencies: [],
+    dependencies: [],
+    // npm packages needed
+    files: [
+      {
+        type: "registry:ui",
+        // Points to raw GitHub URL of your component
+        path: "src/components/ui/Silk.tsx",
+        target: "components/ui/Silk.tsx"
+        // Where to copy in user's project
+      }
+    ]
+  }
+};
+
+// src/registry/components/lightning.ts
+var lightningRegistry = {
+  button: {
+    name: "lightning background",
+    description: "crazyyyyy background",
+    type: "registry:ui",
+    registryDependencies: [],
+    dependencies: [],
+    // npm packages needed
+    files: [
+      {
+        type: "registry:ui",
+        // Points to raw GitHub URL of your component
+        path: "src/components/ui/Lightning.tsx",
+        target: "components/ui/Lightning.tsx"
+        // Where to copy in user's project
+      }
+    ]
+  }
+};
+
 // src/registry/index.ts
 var REGISTRY_BASE_URL = "https://raw.githubusercontent.com/Shauray018/groovy-ui/refs/heads/main/groovy-ui-components";
 var REGISTRY = {
-  ...buttonRegistry
-  // ...alertRegistry,
-  // ...cardRegistry,
+  ...buttonRegistry,
+  ...lightningRegistry,
+  ...silkRegistry
 };
 function getComponent(name) {
   return REGISTRY[name];
@@ -71,4 +113,4 @@ export {
   resolveAllDependencies,
   fetchComponentTemplate
 };
-//# sourceMappingURL=chunk-3BUGHI3R.js.map
+//# sourceMappingURL=chunk-4OHUC5LR.js.map
