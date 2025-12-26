@@ -1,6 +1,6 @@
 import { Registry } from '../index.js';
 
-export const buttonRegistry: Registry = {
+export const silkRegistry: Registry = {
   button: {
     name: 'silk background',
     description: 'crazyyyyy background',
