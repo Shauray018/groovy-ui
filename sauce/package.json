@@ -1,6 +1,6 @@
 {
   "name": "groovy-native-ui",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI for adding Groovy UI components to your React Native project",
   "type": "module",
   "bin": {
