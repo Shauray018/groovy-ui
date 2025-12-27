@@ -70,7 +70,7 @@ export interface SilkProps {
   style?: ViewStyle;
 }
 
-const Silk: React.FC<SilkProps> = ({
+export const Silk: React.FC<SilkProps> = ({
   speed = 5,
   scale = 1,
   color = '#7B7481',
@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Silk;
 
 // Installation required:
 // expo install expo-gl expo-three three

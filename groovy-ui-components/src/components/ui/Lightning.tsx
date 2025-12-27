@@ -2,7 +2,7 @@ import { GLView } from 'expo-gl';
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 
-interface LightningProps {
+export interface LightningProps {
   hue?: number;
   xOffset?: number;
   speed?: number;
@@ -11,7 +11,7 @@ interface LightningProps {
   style?: ViewStyle;
 }
 
-const Lightning: React.FC<LightningProps> = ({
+export const Lightning: React.FC<LightningProps> = ({
   hue = 230,
   xOffset = 0,
   speed = 1,
@@ -209,7 +209,3 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Lightning;
-
-// Installation required:
-// expo install expo-gl expo-three
