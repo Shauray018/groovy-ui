@@ -1,6 +1,7 @@
 import { COMPONENTS } from '@/config/components.config';
-import ComponentTemplate from '@/components/ComponentTemplate';
 import { notFound } from 'next/navigation';
+import { ComponentPreviewTemplate } from '@/components/ComponentTemplate';
+
 
 export async function generateStaticParams() {
   return Object.keys(COMPONENTS).map((slug) => ({ slug }));
@@ -18,5 +19,6 @@ export default async function ComponentPage({
     notFound();
   }
   
-  return <ComponentTemplate component={component} />;
+  // return <ComponentTemplate component={component} name="hello" />;
+  return <ComponentPreviewTemplate component={component} slug={slug} />;
 }

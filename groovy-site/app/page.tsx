@@ -7,14 +7,18 @@ import { Highlighter } from "@/components/ui/highlighter";
 import { SiExpo } from "react-icons/si";
 import { FaReact } from "react-icons/fa";
 import { SiTypescript } from "react-icons/si";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter(); 
+
+
   return (
-    <div className="flex-col w-full items-center justify-center font-sans">
+    <div className="flex-col w-full items-center justify-center font-sans mt-56">
       <div className="flex-col justify-center items-center w-full text-center">
         
         <div className="flex-col w-full items-center justify-center">
-          <h1 className="text-4xl font-bold tracking-tighter mt-40 md:text-5xl lg:text-7xl">
+          <h1 className="text-4xl font-bold tracking-tighter  md:text-5xl lg:text-7xl">
             Built by the Community.
           </h1>
           <h1 className="text-4xl font-bold tracking-tighter md:text-5xl lg:text-7xl">
@@ -39,6 +43,7 @@ export default function Home() {
 
         <div className="flex justify-center items-center gap-6 mt-6">
           <HoverBorderGradient
+            onClick={() => {router.push("/docs")}}
             containerClassName="rounded-full"
             as="button"
             className="dark:bg-black cursor-pointer bg-white text-black dark:text-white flex items-center space-x-2"
@@ -80,3 +85,4 @@ export default function Home() {
     </div>
   );
 }
+

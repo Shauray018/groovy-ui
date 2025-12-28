@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-black`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased  dark:bg-black`}
       >
         <ThemeProvider
           attribute="class"
@@ -36,7 +36,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
+          <div className="mt-20">
           {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>

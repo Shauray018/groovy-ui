@@ -32,7 +32,7 @@ export default function SocialButtons() {
     },[])
 
   return (
-    <div className="flex items-center gap-2 px-8 ">
+    <div className="flex items-center pl-3 ">
       <Button 
         variant="ghost" 
         size="icon"

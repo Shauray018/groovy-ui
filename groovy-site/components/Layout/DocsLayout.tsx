@@ -1,18 +1,14 @@
-"use client"
+"use client";
 
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import ContentArea from './ContentArea';
 
-interface DocsLayoutProps {
-  children: React.ReactNode;
-}
-
-const DocsLayout: React.FC<DocsLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+const DocsLayout = ({ children }: { children: React.ReactNode }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="h-screen flex">
       <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
       <ContentArea sidebarOpen={sidebarOpen}>
         {children}

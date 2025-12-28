@@ -1,4 +1,3 @@
-// components/Layout/Sidebar.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -31,14 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   }
 
   return (
-    <aside className="w-64 border-r min-h-screen sticky top-0 overflow-y-auto">
-      <div className="p-4 border-b flex items-center justify-between">
-        <h1 className="text-xl font-bold">Docs</h1>
-        <button onClick={onToggle} className="p-1">
-          <Menu className="w-5 h-5" />
-        </button>
-      </div>
-
+    <aside className="fixed top-20 left-10 w-64 ">
       <nav className="p-4">
         {Object.entries(DOCS_CONFIG).map(([sectionKey, section]) => (
           <div key={sectionKey} className="mb-6">
@@ -46,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               onClick={() => toggleSection(sectionKey)}
               className="flex items-center justify-between w-full text-sm font-semibold mb-2"
             >
-              <span>{section.title}</span>
+              <span className='text-zinc-400 text-xs'>{section.title}</span>
               {expandedSections[sectionKey] ? (
                 <ChevronDown className="w-4 h-4" />
               ) : (
@@ -64,9 +56,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
                     <li key={item.slug}>
                       <Link
                         href={href}
-                        className={`block w-full text-left px-3 py-2 rounded text-sm ${
+                        className={`block w-full text-left px-2 py-2 rounded font-bold text-xs ${
                           isActive
-                            ? 'bg-muted font-medium'
+                            ? 'bg-muted '
                             : 'hover:bg-muted/50'
                         }`}
                       >
