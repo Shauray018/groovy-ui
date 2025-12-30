@@ -1,6 +1,6 @@
-import { DocsConfig } from '../types/docs.types';
+import { ComponentsConfig } from '../types/docs.types';
 
-export const DOCS_CONFIG: DocsConfig = {
+export const DOCS_CONFIG = {
   gettingStarted: {
     title: 'Getting Started',
     items: [
@@ -12,11 +12,8 @@ export const DOCS_CONFIG: DocsConfig = {
   components: {
     title: 'Components',
     items: [
-      { slug: 'button', title: 'Button' },
-      { slug: 'input', title: 'Input' },
-      { slug: 'card', title: 'Card' },
-      { slug: 'modal', title: 'Modal' },
-      { slug: 'dropdown', title: 'Dropdown' }
+      { slug: 'silk', title: 'Silk' },
+      { slug: 'lightning', title: 'Lightning' }
     ]
   }
 };

@@ -1,801 +1,592 @@
 import { ComponentsConfig } from '../types/docs.types';
 
-export const COMPONENTS: ComponentsConfig = {
-  button: {
-    title: 'Button',
-    description: 'A versatile button component with multiple variants, sizes, and animations for React Native.',
-    installation: 'npm install react-native-reanimated',
-    videoUrl: '/demos/button.mp4',
-    sourceCode: `import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
-import { useState } from 'react';
-
-interface ButtonProps {
-  children: React.ReactNode;
-  onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
-}
-
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  onPress, 
-  variant = 'primary',
-  size = 'md',
-  disabled = false 
-}) => {
-  const [scale] = useState(new Animated.Value(1));
-
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <TouchableOpacity
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        disabled={disabled}
-        style={[
-          styles.button,
-          styles[variant],
-          styles[size],
-          disabled && styles.disabled
-        ]}
-      >
-        <Text style={[styles.text, styles[\`text_\${variant}\`]]}>{children}</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
-
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primary: {
-    backgroundColor: '#007AFF',
-  },
-  secondary: {
-    backgroundColor: '#5856D6',
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  sm: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  md: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  lg: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  text_primary: {
-    color: 'white',
-  },
-  text_secondary: {
-    color: 'white',
-  },
-  text_outline: {
-    color: '#007AFF',
-  },
-});`,
-    dependencies: ['react-native-reanimated'],
-    usage: `import { Button } from '@/components/ui/button';
-
-export default function App() {
-  return (
-    <Button 
-      variant="primary"
-      size="md"
-      onPress={() => console.log('Button pressed!')}
-    >
-      Click Me
-    </Button>
-  );
-}`,
-    props: [
-      {
-        name: 'children',
-        type: 'React.ReactNode',
-        default: '-',
-        description: 'The content to display inside the button'
-      },
-      {
-        name: 'variant',
-        type: "'primary' | 'secondary' | 'outline'",
-        default: "'primary'",
-        description: 'The visual style of the button'
-      },
-      {
-        name: 'size',
-        type: "'sm' | 'md' | 'lg'",
-        default: "'md'",
-        description: 'The size of the button'
-      },
-      {
-        name: 'disabled',
-        type: 'boolean',
-        default: 'false',
-        description: 'Whether the button is disabled'
-      },
-      {
-        name: 'onPress',
-        type: '() => void',
-        default: '-',
-        description: 'Callback when button is pressed'
-      }
-    ],
-    examples: [
-      {
-        title: 'Primary Button',
-        code: `<Button variant="primary" onPress={() => {}}>
-  Primary Button
-</Button>`
-      },
-      {
-        title: 'Outline Button',
-        code: `<Button variant="outline" onPress={() => {}}>
-  Outline Button
-</Button>`
-      },
-      {
-        title: 'Disabled Button',
-        code: `<Button disabled onPress={() => {}}>
-  Disabled Button
-</Button>`
-      }
+export const DOCS_CONFIG = {
+  gettingStarted: {
+    title: 'Getting Started',
+    items: [
+      { slug: 'introduction', title: 'Introduction' },
+      { slug: 'installation', title: 'Installation' },
+      { slug: 'usage', title: 'Usage' }
     ]
   },
+  components: {
+    title: 'Components',
+    items: [
+      { slug: 'silk', title: 'Silk' },
+      { slug: 'lightning', title: 'Lightning' }
+    ]
+  }
+};
 
-  input: {
-    title: 'Input',
-    description: 'A customizable text input component with support for labels, icons, validation states, and animations.',
-    installation: 'npm install react-native-vector-icons',
-    videoUrl: '/demos/input.mp4',
-    sourceCode: `import React, { useState } from 'react';
-import { TextInput, View, Text, StyleSheet, Animated } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+export const COMPONENTS: ComponentsConfig = {
+  silk: {
+    title: 'Silk',
+    description: 'A mesmerizing animated background component with flowing silk-like patterns using WebGL shaders. Features customizable colors, speed, scale, and noise effects.',
+    installation: 'npx groovy-ui add silk',
+    videoUrl: '/demos/silk.mp4',
+    sourceCode: `import { GLView } from 'expo-gl';
+import { Renderer, THREE } from 'expo-three';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 
-interface InputProps {
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder?: string;
-  label?: string;
-  error?: string;
-  leftIcon?: string;
-  rightIcon?: string;
-  secureTextEntry?: boolean;
+type NormalizedRGB = [number, number, number];
+
+const hexToNormalizedRGB = (hex: string): NormalizedRGB => {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.slice(0, 2), 16) / 255;
+  const g = parseInt(clean.slice(2, 4), 16) / 255;
+  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  return [r, g, b];
+};
+
+const vertexShader = \`
+varying vec2 vUv;
+varying vec3 vPosition;
+void main() {
+  vPosition = position;
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+\`;
+
+const fragmentShader = \`
+varying vec2 vUv;
+varying vec3 vPosition;
+uniform float uTime;
+uniform vec3  uColor;
+uniform float uSpeed;
+uniform float uScale;
+uniform float uRotation;
+uniform float uNoiseIntensity;
+const float e = 2.71828182845904523536;
+float noise(vec2 texCoord) {
+  float G = e;
+  vec2  r = (G * sin(G * texCoord));
+  return fract(r.x * r.y * (1.0 + texCoord.x));
+}
+vec2 rotateUvs(vec2 uv, float angle) {
+  float c = cos(angle);
+  float s = sin(angle);
+  mat2  rot = mat2(c, -s, s, c);
+  return rot * uv;
+}
+void main() {
+  float rnd        = noise(gl_FragCoord.xy);
+  vec2  uv         = rotateUvs(vUv * uScale, uRotation);
+  vec2  tex        = uv * uScale;
+  float tOffset    = uSpeed * uTime;
+  tex.y += 0.03 * sin(8.0 * tex.x - tOffset);
+  float pattern = 0.6 +
+                  0.4 * sin(5.0 * (tex.x + tex.y +
+                                   cos(3.0 * tex.x + 5.0 * tex.y) +
+                                   0.02 * tOffset) +
+                           sin(20.0 * (tex.x + tex.y - 0.1 * tOffset)));
+  vec4 col = vec4(uColor, 1.0) * vec4(pattern) - rnd / 15.0 * uNoiseIntensity;
+  col.a = 1.0;
+  gl_FragColor = col;
+}
+\`;
+
+export interface SilkProps {
+  speed?: number;
+  scale?: number;
+  color?: string;
+  noiseIntensity?: number;
+  rotation?: number;
+  style?: ViewStyle;
 }
 
-export const Input: React.FC<InputProps> = ({
-  value,
-  onChangeText,
-  placeholder,
-  label,
-  error,
-  leftIcon,
-  rightIcon,
-  secureTextEntry = false,
+export const Silk: React.FC<SilkProps> = ({
+  speed = 5,
+  scale = 1,
+  color = '#7B7481',
+  noiseIntensity = 1.5,
+  rotation = 0,
+  style
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const [focusAnim] = useState(new Animated.Value(0));
+  const timeRef = useRef(0);
+  const requestRef = useRef<number | null>(null);
 
-  const handleFocus = () => {
-    setIsFocused(true);
-    Animated.timing(focusAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
+  const onContextCreate = async (gl: any) => {
+    const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
+    
+    // Create renderer
+    const renderer = new Renderer({ gl });
+    renderer.setSize(width, height);
+    renderer.setClearColor(0x000000, 0);
+
+    // Create scene
+    const scene = new THREE.Scene();
+
+    // Create camera
+    const camera = new THREE.OrthographicCamera(
+      -width / 2,
+      width / 2,
+      height / 2,
+      -height / 2,
+      0.1,
+      1000
+    );
+    camera.position.z = 1;
+
+    // Create uniforms
+    const uniforms = {
+      uSpeed: { value: speed },
+      uScale: { value: scale },
+      uNoiseIntensity: { value: noiseIntensity },
+      uColor: { value: new THREE.Color(...hexToNormalizedRGB(color)) },
+      uRotation: { value: rotation },
+      uTime: { value: 0 }
+    };
+
+    // Create material
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader
+    });
+
+    // Create mesh
+    const geometry = new THREE.PlaneGeometry(width, height, 1, 1);
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    // Animation loop
+    let lastTime = Date.now();
+    
+    const animate = () => {
+      requestRef.current = requestAnimationFrame(animate);
+      
+      const currentTime = Date.now();
+      const delta = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+      
+      timeRef.current += 0.1 * delta;
+      material.uniforms.uTime.value = timeRef.current;
+
+      renderer.render(scene, camera);
+      gl.endFrameEXP();
+    };
+
+    animate();
   };
 
-  const handleBlur = () => {
-    setIsFocused(false);
-    Animated.timing(focusAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const borderColor = focusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['#E5E5EA', '#007AFF'],
-  });
+  useEffect(() => {
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <Animated.View style={[styles.inputContainer, { borderColor }, error && styles.errorBorder]}>
-        {leftIcon && <Icon name={leftIcon} size={20} color="#8E8E93" style={styles.leftIcon} />}
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#8E8E93"
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          secureTextEntry={secureTextEntry}
-        />
-        {rightIcon && <Icon name={rightIcon} size={20} color="#8E8E93" style={styles.rightIcon} />}
-      </Animated.View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+    <View style={[styles.container, style]}>
+      <GLView
+        style={styles.glView}
+        onContextCreate={onContextCreate}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 8,
+    ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 8,
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 12,
-  },
-  input: {
+  glView: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1C1C1E',
-  },
-  leftIcon: {
-    marginRight: 8,
-  },
-  rightIcon: {
-    marginLeft: 8,
-  },
-  errorBorder: {
-    borderColor: '#FF3B30',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 4,
   },
 });`,
-    dependencies: ['react-native-vector-icons'],
-    usage: `import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+    dependencies: ['expo-gl', 'expo-three', 'three', '@types/three'],
+    usage: `import { Silk } from '@/components/ui/silk';
+import { View, Text } from 'react-native';
 
 export default function App() {
-  const [value, setValue] = useState('');
-
   return (
-    <Input
-      label="Email"
-      placeholder="Enter your email"
-      value={value}
-      onChangeText={setValue}
-      leftIcon="mail"
-    />
-  );
-}`,
-    props: [
-      {
-        name: 'value',
-        type: 'string',
-        default: '-',
-        description: 'The controlled value of the input'
-      },
-      {
-        name: 'onChangeText',
-        type: '(text: string) => void',
-        default: '-',
-        description: 'Callback when text changes'
-      },
-      {
-        name: 'placeholder',
-        type: 'string',
-        default: '-',
-        description: 'Placeholder text when input is empty'
-      },
-      {
-        name: 'label',
-        type: 'string',
-        default: '-',
-        description: 'Label displayed above the input'
-      },
-      {
-        name: 'error',
-        type: 'string',
-        default: '-',
-        description: 'Error message displayed below input'
-      },
-      {
-        name: 'leftIcon',
-        type: 'string',
-        default: '-',
-        description: 'Icon name from Feather icons displayed on left'
-      },
-      {
-        name: 'rightIcon',
-        type: 'string',
-        default: '-',
-        description: 'Icon name from Feather icons displayed on right'
-      },
-      {
-        name: 'secureTextEntry',
-        type: 'boolean',
-        default: 'false',
-        description: 'Whether to obscure text (for passwords)'
-      }
-    ],
-    examples: [
-      {
-        title: 'Basic Input',
-        code: `<Input
-  placeholder="Enter text"
-  value={value}
-  onChangeText={setValue}
-/>`
-      },
-      {
-        title: 'Input with Label and Icon',
-        code: `<Input
-  label="Email"
-  placeholder="you@example.com"
-  leftIcon="mail"
-  value={email}
-  onChangeText={setEmail}
-/>`
-      },
-      {
-        title: 'Password Input with Error',
-        code: `<Input
-  label="Password"
-  placeholder="Enter password"
-  leftIcon="lock"
-  secureTextEntry
-  error="Password must be at least 8 characters"
-  value={password}
-  onChangeText={setPassword}
-/>`
-      }
-    ]
-  },
-
-  card: {
-    title: 'Card',
-    description: 'A flexible card component for displaying content in a contained, elevated format with shadows and rounded corners.',
-    installation: 'npm install react-native',
-    videoUrl: '/demos/card.mp4',
-    sourceCode: `import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-
-interface CardProps {
-  children: React.ReactNode;
-  style?: ViewStyle;
-  elevated?: boolean;
-}
-
-interface CardHeaderProps {
-  children: React.ReactNode;
-}
-
-interface CardTitleProps {
-  children: React.ReactNode;
-}
-
-interface CardContentProps {
-  children: React.ReactNode;
-}
-
-interface CardFooterProps {
-  children: React.ReactNode;
-}
-
-export const Card: React.FC<CardProps> & {
-  Header: React.FC<CardHeaderProps>;
-  Title: React.FC<CardTitleProps>;
-  Content: React.FC<CardContentProps>;
-  Footer: React.FC<CardFooterProps>;
-} = ({ children, style, elevated = true }) => {
-  return (
-    <View style={[styles.card, elevated && styles.elevated, style]}>
-      {children}
+    <View style={{ flex: 1 }}>
+      <Silk 
+        speed={5}
+        scale={1}
+        color="#7B7481"
+        noiseIntensity={1.5}
+      />
+      <Text style={{ zIndex: 1 }}>Your content here</Text>
     </View>
   );
-};
-
-Card.Header = ({ children }) => (
-  <View style={styles.header}>{children}</View>
-);
-
-Card.Title = ({ children }) => (
-  <Text style={styles.title}>{children}</Text>
-);
-
-Card.Content = ({ children }) => (
-  <View style={styles.content}>{children}</View>
-);
-
-Card.Footer = ({ children }) => (
-  <View style={styles.footer}>{children}</View>
-);
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  elevated: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1C1C1E',
-  },
-  content: {
-    padding: 16,
-  },
-  footer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
-  },
-});`,
-    dependencies: ['react-native'],
-    usage: `import { Card } from '@/components/ui/card';
-
-export default function App() {
-  return (
-    <Card>
-      <Card.Header>
-        <Card.Title>Card Title</Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <Text>Your content goes here</Text>
-      </Card.Content>
-      <Card.Footer>
-        <Text>Footer content</Text>
-      </Card.Footer>
-    </Card>
-  );
 }`,
     props: [
       {
-        name: 'children',
-        type: 'React.ReactNode',
-        default: '-',
-        description: 'The content of the card'
+        name: 'speed',
+        type: 'number',
+        default: '5',
+        description: 'Animation speed of the silk pattern'
+      },
+      {
+        name: 'scale',
+        type: 'number',
+        default: '1',
+        description: 'Scale of the silk pattern'
+      },
+      {
+        name: 'color',
+        type: 'string',
+        default: "'#7B7481'",
+        description: 'Hex color of the silk pattern'
+      },
+      {
+        name: 'noiseIntensity',
+        type: 'number',
+        default: '1.5',
+        description: 'Intensity of the noise effect'
+      },
+      {
+        name: 'rotation',
+        type: 'number',
+        default: '0',
+        description: 'Rotation angle of the pattern in radians'
       },
       {
         name: 'style',
         type: 'ViewStyle',
         default: '-',
-        description: 'Additional styles to apply to the card'
-      },
-      {
-        name: 'elevated',
-        type: 'boolean',
-        default: 'true',
-        description: 'Whether the card has shadow elevation'
+        description: 'Additional styles to apply to the container'
       }
     ],
     examples: [
       {
-        title: 'Basic Card',
-        code: `<Card>
-  <Card.Content>
-    <Text>Simple card content</Text>
-  </Card.Content>
-</Card>`
+        title: 'Basic Silk Background',
+        code: `<View style={{ flex: 1 }}>
+  <Silk />
+  <Text>Content over silk background</Text>
+</View>`
       },
       {
-        title: 'Card with All Sections',
-        code: `<Card>
-  <Card.Header>
-    <Card.Title>Product Details</Card.Title>
-  </Card.Header>
-  <Card.Content>
-    <Text>Description of the product goes here</Text>
-  </Card.Content>
-  <Card.Footer>
-    <Button onPress={() => {}}>Buy Now</Button>
-  </Card.Footer>
-</Card>`
+        title: 'Custom Color and Speed',
+        code: `<View style={{ flex: 1 }}>
+  <Silk 
+    color="#4A90E2"
+    speed={8}
+    scale={1.5}
+  />
+  <Text>Fast blue silk pattern</Text>
+</View>`
       },
       {
-        title: 'Flat Card',
-        code: `<Card elevated={false}>
-  <Card.Content>
-    <Text>Card without shadow</Text>
-  </Card.Content>
-</Card>`
+        title: 'High Intensity with Rotation',
+        code: `<View style={{ flex: 1 }}>
+  <Silk 
+    color="#E24A90"
+    noiseIntensity={2.5}
+    rotation={0.785}
+    speed={3}
+  />
+  <Text>Rotated pink silk</Text>
+</View>`
       }
     ]
   },
 
-  modal: {
-    title: 'Modal',
-    description: 'A modal dialog component for displaying content in an overlay with backdrop, animations, and customizable positioning.',
-    installation: 'npm install react-native-reanimated',
-    videoUrl: '/demos/modal.mp4',
-    sourceCode: `import React, { useEffect } from 'react';
-import {
-  Modal as RNModal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Dimensions,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+  lightning: {
+    title: 'Lightning',
+    description: 'A dynamic lightning-effect animated background using WebGL shaders with fractal noise. Features customizable hue, speed, intensity, and positioning.',
+    installation: 'npx groovy-ui add lightning',
+    videoUrl: '/demos/lightning.mp4',
+    sourceCode: `import { GLView } from 'expo-gl';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 
-interface ModalProps {
-  visible: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-  position?: 'center' | 'bottom';
+export interface LightningProps {
+  hue?: number;
+  xOffset?: number;
+  speed?: number;
+  intensity?: number;
+  size?: number;
+  style?: ViewStyle;
 }
 
-interface ModalHeaderProps {
-  children: React.ReactNode;
-  showClose?: boolean;
-}
+export const Lightning: React.FC<LightningProps> = ({
+  hue = 230,
+  xOffset = 0,
+  speed = 1,
+  intensity = 1,
+  size = 1,
+  style
+}) => {
+  const requestRef = useRef<number | null>(null);
 
-interface ModalBodyProps {
-  children: React.ReactNode;
-}
+  const onContextCreate = async (gl: any) => {
+    const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
-const { height } = Dimensions.get('window');
+    const vertexShaderSource = \`
+      attribute vec2 aPosition;
+      void main() {
+        gl_Position = vec4(aPosition, 0.0, 1.0);
+      }
+    \`;
 
-export const Modal: React.FC<ModalProps> & {
-  Header: React.FC<ModalHeaderProps>;
-  Body: React.FC<ModalBodyProps>;
-} = ({ visible, onClose, children, position = 'center' }) => {
-  const fadeAnim = new Animated.Value(0);
-  const slideAnim = new Animated.Value(position === 'bottom' ? height : 0);
+    const fragmentShaderSource = \`
+      precision mediump float;
+      uniform vec2 iResolution;
+      uniform float iTime;
+      uniform float uHue;
+      uniform float uXOffset;
+      uniform float uSpeed;
+      uniform float uIntensity;
+      uniform float uSize;
+      
+      #define OCTAVE_COUNT 10
+
+      vec3 hsv2rgb(vec3 c) {
+          vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0,4.0,2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+          return c.z * mix(vec3(1.0), rgb, c.y);
+      }
+
+      float hash11(float p) {
+          p = fract(p * .1031);
+          p *= p + 33.33;
+          p *= p + p;
+          return fract(p);
+      }
+
+      float hash12(vec2 p) {
+          vec3 p3 = fract(vec3(p.xyx) * .1031);
+          p3 += dot(p3, p3.yzx + 33.33);
+          return fract((p3.x + p3.y) * p3.z);
+      }
+
+      mat2 rotate2d(float theta) {
+          float c = cos(theta);
+          float s = sin(theta);
+          return mat2(c, -s, s, c);
+      }
+
+      float noise(vec2 p) {
+          vec2 ip = floor(p);
+          vec2 fp = fract(p);
+          float a = hash12(ip);
+          float b = hash12(ip + vec2(1.0, 0.0));
+          float c = hash12(ip + vec2(0.0, 1.0));
+          float d = hash12(ip + vec2(1.0, 1.0));
+          
+          vec2 t = smoothstep(0.0, 1.0, fp);
+          return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
+      }
+
+      float fbm(vec2 p) {
+          float value = 0.0;
+          float amplitude = 0.5;
+          for (int i = 0; i < OCTAVE_COUNT; ++i) {
+              value += amplitude * noise(p);
+              p *= rotate2d(0.45);
+              p *= 2.0;
+              amplitude *= 0.5;
+          }
+          return value;
+      }
+
+      void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+          vec2 uv = fragCoord / iResolution.xy;
+          uv = 2.0 * uv - 1.0;
+          uv.x *= iResolution.x / iResolution.y;
+          uv.x += uXOffset - (iResolution.x / iResolution.y - 1.0) * 0.5;
+          
+          float loopTime = mod(iTime * uSpeed, 3.0);
+          uv += 2.0 * fbm(uv * uSize + 0.8 * loopTime) - 1.0;
+          
+          float dist = abs(uv.x);
+          dist = max(dist, 0.01);
+          vec3 baseColor = hsv2rgb(vec3(uHue / 360.0, 0.7, 0.8));
+          vec3 col = baseColor * pow(mix(0.0, 0.07, hash11(iTime * uSpeed)) / dist, 1.0) * uIntensity;
+          col = clamp(col, 0.0, 1.0);
+          col = pow(col, vec3(1.0));
+          fragColor = vec4(col, 1.0);
+      }
+
+      void main() {
+          mainImage(gl_FragColor, gl_FragCoord.xy);
+      }
+    \`;
+
+    const compileShader = (source: string, type: number): any => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+
+    const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
+    const fragmentShader = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
+    if (!vertexShader || !fragmentShader) return;
+
+    const program = gl.createProgram();
+    if (!program) return;
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Program linking error:', gl.getProgramInfoLog(program));
+      return;
+    }
+    gl.useProgram(program);
+
+    const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
+    const vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    const aPosition = gl.getAttribLocation(program, 'aPosition');
+    gl.enableVertexAttribArray(aPosition);
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+    const iResolutionLocation = gl.getUniformLocation(program, 'iResolution');
+    const iTimeLocation = gl.getUniformLocation(program, 'iTime');
+    const uHueLocation = gl.getUniformLocation(program, 'uHue');
+    const uXOffsetLocation = gl.getUniformLocation(program, 'uXOffset');
+    const uSpeedLocation = gl.getUniformLocation(program, 'uSpeed');
+    const uIntensityLocation = gl.getUniformLocation(program, 'uIntensity');
+    const uSizeLocation = gl.getUniformLocation(program, 'uSize');
+
+    const startTime = Date.now();
+    
+    const render = () => {
+      requestRef.current = requestAnimationFrame(render);
+
+      gl.viewport(0, 0, width, height);
+      gl.uniform2f(iResolutionLocation, width, height);
+      const currentTime = Date.now();
+      gl.uniform1f(iTimeLocation, (currentTime - startTime) / 1000.0);
+      gl.uniform1f(uHueLocation, hue);
+      gl.uniform1f(uXOffsetLocation, xOffset);
+      gl.uniform1f(uSpeedLocation, speed);
+      gl.uniform1f(uIntensityLocation, intensity);
+      gl.uniform1f(uSizeLocation, size);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      
+      gl.endFrameEXP();
+    };
+    
+    render();
+  };
 
   useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 20,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: position === 'bottom' ? height : 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible]);
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <RNModal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
-        <TouchableOpacity
-          style={styles.backdropTouchable}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-      </Animated.View>
-      <Animated.View
-        style={[
-          styles.modalContainer,
-          position === 'center' ? styles.centerModal : styles.bottomModal,
-          { transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <View style={styles.modalContent}>{children}</View>
-      </Animated.View>
-    </RNModal>
-  );
-};
-
-Modal.Header = ({ children, showClose = true }) => {
-  const modal = React.useContext(ModalContext);
-  return (
-    <View style={styles.header}>
-      <Text style={styles.headerText}>{children}</Text>
-      {showClose && (
-        <TouchableOpacity onPress={modal?.onClose} style={styles.closeButton}>
-          <Icon name="x" size={24} color="#1C1C1E" />
-        </TouchableOpacity>
-      )}
+    <View style={[styles.container, style]}>
+      <GLView
+        style={styles.glView}
+        onContextCreate={onContextCreate}
+      />
     </View>
   );
 };
 
-Modal.Body = ({ children }) => (
-  <View style={styles.body}>{children}</View>
-);
-
-const ModalContext = React.createContext<{ onClose: () => void } | null>(null);
-
 const styles = StyleSheet.create({
-  backdrop: {
+  container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: -1,
   },
-  backdropTouchable: {
+  glView: {
     flex: 1,
   },
-  modalContainer: {
-    position: 'absolute',
-    width: '100%',
-  },
-  centerModal: {
-    top: '25%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  bottomModal: {
-    bottom: 0,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    width: '100%',
-    maxHeight: '80%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1C1C1E',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  body: {
-    padding: 20,
-  },
 });`,
-    dependencies: ['react-native-reanimated', 'react-native-vector-icons'],
-    usage: `import { Modal } from '@/components/ui/modal';
-import { useState } from 'react';
+    dependencies: ['expo-gl'],
+    usage: `import { Lightning } from '@/components/ui/lightning';
+import { View, Text } from 'react-native';
 
 export default function App() {
-  const [isVisible, setVisible] = useState(false);
-
   return (
-    <>
-      <Button onPress={() => setVisible(true)}>Open Modal</Button>
-      
-      <Modal visible={isVisible} onClose={() => setVisible(false)}>
-        <Modal.Header>Modal Title</Modal.Header>
-        <Modal.Body>
-          <Text>Your modal content goes here</Text>
-        </Modal.Body>
-      </Modal>
-    </>
+    <View style={{ flex: 1 }}>
+      <Lightning 
+        hue={230}
+        speed={1}
+        intensity={1}
+      />
+      <Text style={{ zIndex: 1 }}>Your content here</Text>
+    </View>
   );
 }`,
     props: [
       {
-        name: 'visible',
-        type: 'boolean',
-        default: '-',
-        description: 'Whether the modal is visible'
+        name: 'hue',
+        type: 'number',
+        default: '230',
+        description: 'Color hue value (0-360) for the lightning effect'
       },
       {
-        name: 'onClose',
-        type: '() => void',
-        default: '-',
-        description: 'Callback when modal should close'
+        name: 'xOffset',
+        type: 'number',
+        default: '0',
+        description: 'Horizontal offset of the lightning bolt'
       },
       {
-        name: 'children',
-        type: 'React.ReactNode',
-        default: '-',
-        description: 'The content of the modal'
+        name: 'speed',
+        type: 'number',
+        default: '1',
+        description: 'Animation speed multiplier'
       },
       {
-        name: 'position',
-        type: "'center' | 'bottom'",
-        default: "'center'",
-        description: 'Position of the modal on screen'
+        name: 'intensity',
+        type: 'number',
+        default: '1',
+        description: 'Brightness intensity of the lightning'
+      },
+      {
+        name: 'size',
+        type: 'number',
+        default: '1',
+        description: 'Scale of the fractal noise pattern'
+      },
+      {
+        name: 'style',
+        type: 'ViewStyle',
+        default: '-',
+        description: 'Additional styles to apply to the container'
       }
     ],
     examples: [
       {
-        title: 'Center Modal',
-        code: `<Modal 
-  visible={visible} 
-  onClose={() => setVisible(false)}
-  position="center"
->
-  <Modal.Header>Confirmation</Modal.Header>
-  <Modal.Body>
-    <Text>Are you sure?</Text>
-  </Modal.Body>
-</Modal>`
+        title: 'Basic Lightning Background',
+        code: `<View style={{ flex: 1 }}>
+  <Lightning />
+  <Text>Content over lightning background</Text>
+</View>`
       },
       {
-        title: 'Bottom Sheet Modal',
-        code: `<Modal 
-  visible={visible} 
-  onClose={() => setVisible(false)}
-  position="bottom"
->
-  <Modal.Header>Select Option</Modal.Header>
-  <Modal.Body>
-    <Text>Choose an option below</Text>
-  </Modal.Body>
-</Modal>`
+        title: 'Purple Lightning with High Speed',
+        code: `<View style={{ flex: 1 }}>
+  <Lightning 
+    hue={280}
+    speed={2}
+    intensity={1.5}
+  />
+  <Text>Fast purple lightning</Text>
+</View>`
+      },
+      {
+        title: 'Green Lightning with Offset',
+        code: `<View style={{ flex: 1 }}>
+  <Lightning 
+    hue={120}
+    xOffset={0.5}
+    size={1.5}
+    intensity={0.8}
+  />
+  <Text>Offset green lightning</Text>
+</View>`
       }
     ]
-  },
-
-}
+  }
+};
