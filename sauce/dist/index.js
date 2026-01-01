@@ -3,7 +3,7 @@ import {
   getAllComponents,
   getComponent,
   resolveAllDependencies
-} from "./chunk-4OHUC5LR.js";
+} from "./chunk-ZIONTJQ5.js";
 
 // src/index.ts
 import { Command } from "commander";
@@ -88,7 +88,7 @@ async function fileExists(filePath) {
 }
 async function checkComponentConflicts(components, projectPath) {
   const conflicts = [];
-  const { getComponent: getComponent2 } = await import("./registry-V5YPM6G3.js");
+  const { getComponent: getComponent2 } = await import("./registry-NMT7GCYM.js");
   for (const componentName of components) {
     const component = getComponent2(componentName);
     if (!component) continue;
@@ -641,8 +641,7 @@ const MyButton: React.FC<ButtonProps> = (props) => {
 
 // src/index.ts
 var program = new Command();
-program.name("groovy-ui").description("Add beautiful UI components to your React Native project").version("0.1.0");
+program.name("groovy-ui").description("Add beautiful UI components to your React Native project").version("1.0.3");
 program.command("init").description("Initialize groovy-ui in your project").option("-y, --yes", "Skip confirmation prompts").action(initCommand);
 program.command("add [components...]").description("Add UI components to your project").option("-o, --overwrite", "Overwrite existing components").option("-y, --yes", "Skip confirmation prompts").action(addCommand);
 program.parse();
-//# sourceMappingURL=index.js.map

@@ -1,18 +1,17 @@
 import { Registry } from '../index.js';
 
 export const silkRegistry: Registry = {
-  button: {
-    name: 'silk background',
-    description: 'crazyyyyy background',
+  silk: {  // Changed from 'button' to 'silk'
+    name: 'silk',  // Should match the key
+    description: 'crazyyyyy silk background',
     type: 'registry:ui',
     registryDependencies: [],
-    dependencies: [], // npm packages needed
+    dependencies: [],
     files: [
       {
         type: 'registry:ui',
-        // Points to raw GitHub URL of your component
         path: 'src/components/ui/Silk.tsx',
-        target: 'components/ui/Silk.tsx', // Where to copy in user's project
+        target: 'components/ui/Silk.tsx',
       },
     ],
   },

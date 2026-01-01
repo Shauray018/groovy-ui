@@ -1,6 +1,6 @@
 {
   "name": "groovy-native-ui",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "CLI for adding Groovy UI components to your React Native project",
   "type": "module",
   "bin": {
@@ -11,7 +11,7 @@
     "bin"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
+    "build": "tsup",
     "dev": "tsup src/index.ts --format esm --dts --watch",
     "test:local": "npm run build && npm link"
   },

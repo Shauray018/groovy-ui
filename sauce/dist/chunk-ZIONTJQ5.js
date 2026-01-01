@@ -21,20 +21,19 @@ var buttonRegistry = {
 
 // src/registry/components/silk.ts
 var silkRegistry = {
-  button: {
-    name: "silk background",
-    description: "crazyyyyy background",
+  silk: {
+    // Changed from 'button' to 'silk'
+    name: "silk",
+    // Should match the key
+    description: "crazyyyyy silk background",
     type: "registry:ui",
     registryDependencies: [],
     dependencies: [],
-    // npm packages needed
     files: [
       {
         type: "registry:ui",
-        // Points to raw GitHub URL of your component
         path: "src/components/ui/Silk.tsx",
         target: "components/ui/Silk.tsx"
-        // Where to copy in user's project
       }
     ]
   }
@@ -42,20 +41,19 @@ var silkRegistry = {
 
 // src/registry/components/lightning.ts
 var lightningRegistry = {
-  button: {
-    name: "lightning background",
-    description: "crazyyyyy background",
+  lightning: {
+    // Changed from 'button' to 'lightning'
+    name: "lightning",
+    // Should match the key
+    description: "crazyyyyy lightning background",
     type: "registry:ui",
     registryDependencies: [],
     dependencies: [],
-    // npm packages needed
     files: [
       {
         type: "registry:ui",
-        // Points to raw GitHub URL of your component
         path: "src/components/ui/Lightning.tsx",
         target: "components/ui/Lightning.tsx"
-        // Where to copy in user's project
       }
     ]
   }
@@ -113,4 +111,3 @@ export {
   resolveAllDependencies,
   fetchComponentTemplate
 };
-//# sourceMappingURL=chunk-4OHUC5LR.js.map

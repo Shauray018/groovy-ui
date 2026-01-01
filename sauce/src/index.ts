@@ -2,12 +2,15 @@ import { Command } from 'commander';
 import { addCommand } from './commands/add.js';
 import { initCommand } from './commands/init.js';
 
+
+declare const __VERSION__: string;
+
 const program = new Command();
 
 program
   .name('groovy-ui')
   .description('Add beautiful UI components to your React Native project')
-  .version('0.1.0');
+  .version(__VERSION__);
 
 program
   .command('init')
