@@ -26,12 +26,14 @@ const REGISTRY_BASE_URL = 'https://raw.githubusercontent.com/Shauray018/groovy-u
 import { buttonRegistry } from './components/button.js';
 import { silkRegistry } from './components/silk.js';
 import { lightningRegistry } from './components/lightning.js';
+import { animatedListRegistry } from './components/animated-list.js';
 
 // Combine all registries
 export const REGISTRY: Registry = {
   ...buttonRegistry,
   ...lightningRegistry,
-  ...silkRegistry
+  ...silkRegistry,
+  ...animatedListRegistry
 };
 
 // Helper functions
