@@ -1,1 +1,1 @@
-this is just a fancy!! ui library u needed for your react native project!!
+This is basically a fancy UI library that was required to design and improve the overall look and feel of your React Native project.
