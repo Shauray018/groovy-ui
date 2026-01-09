@@ -1,1 +1,7 @@
 This is basically a fancy UI library that was required to design and improve the overall look and feel of your React Native project.
+
+-> for installing the cli in your expo project type, 
+
+''' 
+npx groovy-native-ui init
+'''
