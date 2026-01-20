@@ -180,7 +180,6 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ onCopy }) => {
       {/* animated Background */}
       <motion.div
         className="absolute inset-0 bg-editor-border rounded-md"
-        animate={getBackgroundAnimation()}
       />
       
       <MotionButton

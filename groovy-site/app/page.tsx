@@ -73,7 +73,7 @@ export default function Home() {
         <img
           src="https://docs.swmansion.com/react-native-reanimated/img/logo-dark.svg"
           alt="Reanimated"
-          className="h-6 w-auto opacity-80"
+          className="h-6 w-auto opacity-70 grayscale brightness-100"
         />
         <span className="text-sm font-medium">Reanimated</span>
       </div>
