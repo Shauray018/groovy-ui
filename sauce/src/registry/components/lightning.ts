@@ -1,8 +1,8 @@
 import { Registry } from '../index.js';
 
 export const lightningRegistry: Registry = {
-  lightning: {  // Changed from 'button' to 'lightning'
-    name: 'lightning',  // Should match the key
+  lightning: {  
+    name: 'lightning',  
     description: 'crazyyyyy lightning background',
     type: 'registry:ui',
     registryDependencies: [],

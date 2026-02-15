@@ -11,13 +11,11 @@ export const silkConfig: ComponentConfig = {
 
 export default function App() {
   return (
-    <View style={{ flex: 1 }}>
-      <Silk 
-        speed={5}
-        scale={1}
-        color="#7B7481"
-      />
-      <Text>Your content here</Text>
+    <View style={styles.container}>
+      <Silk speed={5} scale={1} color="#6A8FAF" />
+      <View style={styles.content}>
+        <Text style={styles.title}>Your content here</Text>
+      </View>
     </View>
   );
 }`,
